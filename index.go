@@ -74,7 +74,6 @@ func (p *Indexer) Run(dir string, relative string) error {
 		other := strings.Repeat(" ", 200-len(tmp))
 		list := []string{tmp, other}
 		f.new = strings.Join(list, "")
-		fmt.Printf("'%s'\n", f.new)
 		target := filepath.Join(dir, f.relative, f.name)
 		source := filepath.Join(linksdir, f.new)
 
