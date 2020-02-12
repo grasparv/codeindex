@@ -42,8 +42,13 @@ func (n nodelist) Less(i, j int) bool {
 }
 
 func (p *Indexer) Run(dir string, relative string) error {
+	dir, err := filepath.Abs(dir)
+	if err != nil {
+		return err
+	}
+
 	linksdir := fmt.Sprintf("%s/src/links", os.Getenv("HOME"))
-	err := os.RemoveAll(linksdir)
+	err = os.RemoveAll(linksdir)
 	if err != nil {
 		return err
 	}
