@@ -71,7 +71,7 @@ func (p *Indexer) Run(dir string, relative string) error {
 	for i, f := range p.nodes {
 		noslashes := strings.ReplaceAll(f.relative, "/", "\\")
 		tmp := fmt.Sprintf(format, i+1, f.name, noslashes)
-		other := strings.Repeat(" ", 200-len(tmp))
+		other := strings.Repeat(" ", 233-len(tmp))
 		list := []string{tmp, other}
 		f.new = strings.Join(list, "")
 		target := filepath.Join(dir, f.relative, f.name)
