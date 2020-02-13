@@ -48,14 +48,6 @@ func (p *Indexer) Run(dir string, relative string) error {
 	}
 
 	linksdir := fmt.Sprintf("%s/src/links", os.Getenv("HOME"))
-	err = os.RemoveAll(linksdir)
-	if err != nil {
-		return err
-	}
-	err = os.MkdirAll(linksdir, 0755)
-	if err != nil {
-		return err
-	}
 
 	p.nodes = make([]node, 0, 4096)
 	err = p.run(dir, relative)
@@ -71,10 +63,18 @@ func (p *Indexer) Run(dir string, relative string) error {
 		}
 	}
 
-	format := fmt.Sprintf("%%04d   %%-%ds %%s", longest+3)
+	err = os.RemoveAll(linksdir)
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(linksdir, 0755)
+	if err != nil {
+		return err
+	}
 
+	format := fmt.Sprintf("%%04d   %%-%ds %%s", longest+3)
 	for i, f := range p.nodes {
-		noslashes := strings.ReplaceAll(f.relative, "/", "\\")
+		noslashes := strings.ReplaceAll(f.relative, "/", "／")
 		tmp := fmt.Sprintf(format, i+1, f.name, noslashes)
 		other := strings.Repeat(" ", 233-len(tmp))
 		list := []string{tmp, other}
