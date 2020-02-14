@@ -10,6 +10,8 @@ import (
 )
 
 const pad = 256
+const columns = 233
+const spacing = 3
 
 type Indexer struct {
 	Ending string
@@ -72,11 +74,11 @@ func (p *Indexer) Run(dir string, relative string) error {
 		return err
 	}
 
-	format := fmt.Sprintf("%%04d   %%-%ds %%s", longest+3)
+	format := fmt.Sprintf("%%04d   %%-%ds %%s", longest+spacing)
 	for i, f := range p.nodes {
 		noslashes := strings.ReplaceAll(f.relative, "/", "／")
 		tmp := fmt.Sprintf(format, i+1, f.name, noslashes)
-		other := strings.Repeat(" ", 233-len(tmp))
+		other := strings.Repeat(" ", columns-len(tmp))
 		list := []string{tmp, other}
 		f.new = strings.Join(list, "")
 		target := filepath.Join(dir, f.relative, f.name)
