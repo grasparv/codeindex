@@ -50,7 +50,7 @@ func (p *Indexer) Run(dir string, relative string) error {
 		return err
 	}
 
-	linksfile := fmt.Sprintf("%s/src/links.txt", os.Getenv("HOME"))
+	linksfile := fmt.Sprintf("%s/.go.links", os.Getenv("HOME"))
 
 	p.nodes = make([]node, 0, 4096)
 	err = p.run(dir, relative)
