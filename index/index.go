@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/grasparv/codeindex/stats"
 )
 
 const pad = 256
@@ -44,7 +46,7 @@ func (n nodelist) Less(i, j int) bool {
 	return n[i].sort < n[j].sort
 }
 
-func (p *Indexer) Run(dir string, relative string) error {
+func (p *Indexer) Run(st *stats.FileStats, dir string) error {
 	dir, err := filepath.Abs(dir)
 	if err != nil {
 		return err
@@ -53,7 +55,7 @@ func (p *Indexer) Run(dir string, relative string) error {
 	linksfile := fmt.Sprintf("%s/.go.links", os.Getenv("HOME"))
 
 	p.nodes = make([]node, 0, 4096)
-	err = p.run(dir, relative)
+	err = p.run(st, dir, "")
 	if err != nil {
 		return err
 	}
@@ -111,7 +113,7 @@ func (p *Indexer) Run(dir string, relative string) error {
 	return nil
 }
 
-func (p *Indexer) run(dir string, relative string) error {
+func (p *Indexer) run(st *stats.FileStats, dir string, relative string) error {
 	finfo, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return err
@@ -119,7 +121,7 @@ func (p *Indexer) run(dir string, relative string) error {
 
 	for _, f := range finfo {
 		if f.IsDir() {
-			err := p.run(filepath.Join(dir, f.Name()), filepath.Join(relative, f.Name()))
+			err := p.run(st, filepath.Join(dir, f.Name()), filepath.Join(relative, f.Name()))
 			if err != nil {
 				return err
 			}
@@ -128,9 +130,17 @@ func (p *Indexer) run(dir string, relative string) error {
 	for _, f := range finfo {
 		if !f.IsDir() {
 			if strings.HasSuffix(f.Name(), p.Ending) {
+				fullname := filepath.Join(dir, f.Name())
+				frequency := 0
+				if v, ok := st.Entries[fullname]; ok {
+					frequency = v
+				} else {
+					frequency = 999999999
+				}
+				fs := fmt.Sprintf("%010d", frequency)
 				p.nodes = append(p.nodes, node{
 					name:     f.Name(),
-					sort:     fmt.Sprintf("%s%s", relative, strings.Repeat("z", pad-len(relative))),
+					sort:     fmt.Sprintf("%s%s%s", fs, relative, strings.Repeat("z", pad-len(relative))),
 					relative: relative,
 				})
 			}
@@ -138,4 +148,11 @@ func (p *Indexer) run(dir string, relative string) error {
 	}
 
 	return nil
+}
+
+func stringReverse(s string) (result string) {
+	for _, v := range s {
+		result = string(v) + result
+	}
+	return
 }

@@ -10,7 +10,6 @@ import (
 
 func main() {
 	var ending string
-	flag.BoolVar
 	flag.StringVar(&ending, "s", ".go", "extension to index")
 	flag.Parse()
 	dirs := flag.Args()
@@ -19,20 +18,32 @@ func main() {
 		return
 	}
 
-	if dirs[0] == "scan" {
+	switch dirs[0] {
+	case "index":
 		indexer := &codeindex.Indexer{
 			Ending: ending,
 		}
-		err := indexer.Run(dirs[1], "")
+		stats, err := stats.Read()
+		if err == nil {
+			err = indexer.Run(stats, dirs[1])
+		}
 		if err != nil {
 			fmt.Printf("error %s\n", err.Error())
 			return
 		}
-	} else if dirs[0] == "stats" {
-		err := stats.Update(dirs[1])
+	case "use":
+		stats, err := stats.Read()
+		if err == nil {
+			err = stats.Update(dirs[1])
+		}
+		if err == nil {
+			err = stats.Write()
+		}
 		if err != nil {
 			fmt.Printf("error %s\n", err.Error())
 			return
 		}
+	default:
+		fmt.Printf("unknown command\n")
 	}
 }
