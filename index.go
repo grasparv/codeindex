@@ -1,6 +1,7 @@
 package codeindex
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -49,7 +50,7 @@ func (p *Indexer) Run(dir string, relative string) error {
 		return err
 	}
 
-	linksdir := fmt.Sprintf("%s/src/links", os.Getenv("HOME"))
+	linksfile := fmt.Sprintf("%s/src/links.txt", os.Getenv("HOME"))
 
 	p.nodes = make([]node, 0, 4096)
 	err = p.run(dir, relative)
@@ -65,29 +66,46 @@ func (p *Indexer) Run(dir string, relative string) error {
 		}
 	}
 
-	err = os.RemoveAll(linksdir)
-	if err != nil {
-		return err
-	}
-	err = os.MkdirAll(linksdir, 0755)
-	if err != nil {
-		return err
+	bld := strings.Builder{}
+
+	for _, f := range p.nodes {
+		target := filepath.Join(f.relative, f.name)
+		bld.WriteString(target)
+		bld.WriteString("\n")
 	}
 
-	format := fmt.Sprintf("%%04d   %%-%ds %%s", longest+spacing)
-	for i, f := range p.nodes {
-		noslashes := strings.ReplaceAll(f.relative, "/", "／")
-		tmp := fmt.Sprintf(format, i+1, f.name, noslashes)
-		other := strings.Repeat(" ", columns-len(tmp))
-		list := []string{tmp, other}
-		f.new = strings.Join(list, "")
-		target := filepath.Join(dir, f.relative, f.name)
-		source := filepath.Join(linksdir, f.new)
+	var fh *os.File
 
-		err := os.Symlink(target, source)
+	_, err = os.Stat(linksfile)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+	} else {
+		err = os.Remove(linksfile)
 		if err != nil {
 			return err
 		}
+	}
+
+	fh, err = os.Create(linksfile)
+	if err != nil {
+		return err
+	}
+
+	n, err := fh.WriteString(bld.String())
+	fh.Close()
+	if err != nil {
+		return err
+	}
+
+	if n != len(bld.String()) {
+		return errors.New("not all contents written")
+	}
+
+	err = os.Chmod(linksfile, 0400)
+	if err != nil {
+		return err
 	}
 
 	return nil
