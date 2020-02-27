@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/grasparv/codeindex"
+	"github.com/grasparv/codeindex/index"
 )
 
 func main() {
