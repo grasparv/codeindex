@@ -130,12 +130,13 @@ func (p *Indexer) run(st *stats.FileStats, dir string, relative string) error {
 	for _, f := range finfo {
 		if !f.IsDir() {
 			if strings.HasSuffix(f.Name(), p.Ending) {
+				const largenum = 999999999
 				fullname := filepath.Join(dir, f.Name())
 				frequency := 0
 				if v, ok := st.Entries[fullname]; ok {
-					frequency = v
+					frequency = largenum - v
 				} else {
-					frequency = 999999999
+					frequency = largenum
 				}
 				fs := fmt.Sprintf("%010d", frequency)
 				p.nodes = append(p.nodes, node{
