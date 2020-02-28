@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -70,6 +69,8 @@ func (p *Indexer) Run(st *stats.FileStats, dir string) error {
 		if len(f.name) > longest {
 			longest = len(f.name)
 		}
+
+		//fmt.Printf("node %+v\n", f)
 	}
 
 	bld := strings.Builder{}
@@ -138,17 +139,20 @@ func (p *Indexer) run(st *stats.FileStats, dir string, relative string) error {
 				frequency := 0
 				if v, ok := st.Entries[fullname]; ok {
 					frequency = largenum - v.Count
-					dur := int(math.Round(time.Since(v.Date).Hours()))
+					dur := time.Since(v.Date).Hours()
 					if dur < recentuse {
-						frequency = (frequency * (recentuse - dur)) / 10
+						factor := (float64(recentuse) - dur) / 10 // e.g. 7.2 for most-recent hour
+						addition := v.Count * int(factor)         // e.g. + 7.2 * 145 = 1044
+						frequency = frequency - addition
+						//fmt.Printf("for %s, factor=%f, count=%d, addition=%d, frequency=%d\n", f.Name(), factor, v.Count, addition, frequency)
 					}
 				} else {
 					frequency = largenum
 				}
-				fs := fmt.Sprintf("%010d", frequency)
+				freqs := fmt.Sprintf("%010d", frequency)
 				p.nodes = append(p.nodes, node{
 					name:     f.Name(),
-					sort:     fmt.Sprintf("%s%s%s", fs, relative, strings.Repeat("z", pad-len(relative))),
+					sort:     fmt.Sprintf("%s%s%s", freqs, relative, strings.Repeat("z", pad-len(relative))),
 					relative: relative,
 				})
 			}

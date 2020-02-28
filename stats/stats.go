@@ -102,8 +102,10 @@ func (st *FileStats) Update(filename string) error {
 	}
 
 	if v, ok := st.Entries[absname]; ok {
-		v.Count++
-		v.Date = time.Now()
+		st.Entries[absname] = FileStat{
+			Count: v.Count + 1,
+			Date:  time.Now(),
+		}
 	} else {
 		st.Entries[absname] = FileStat{
 			Count: 1,
