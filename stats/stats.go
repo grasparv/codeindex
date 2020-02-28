@@ -5,10 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"path/filepath"
 	"time"
 )
+
+const oneweek = 120.0
+const pruneratio = 5
 
 type FileStat struct {
 	Count int       `json:"count"`
@@ -110,6 +114,15 @@ func (st *FileStats) Update(filename string) error {
 		st.Entries[absname] = FileStat{
 			Count: 1,
 			Date:  time.Now(),
+		}
+	}
+
+	// auto-prune old or rarely-used files
+	for k, v := range st.Entries {
+		age := time.Since(v.Date)
+		if age.Hours() > oneweek && // last use older than one week
+			v.Count/int(math.Round(age.Hours())) < pruneratio { // low count/age ratio
+			delete(st.Entries, k)
 		}
 	}
 
