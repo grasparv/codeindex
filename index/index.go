@@ -30,6 +30,7 @@ type node struct {
 	sort     string
 	relative string
 	new      string
+	score    int
 }
 
 type nodelist []node
@@ -74,15 +75,19 @@ func (p *Indexer) Run(st *stats.FileStats, dir string) error {
 	}
 
 	bld := strings.Builder{}
+	lastscore := largenum
 
 	for _, f := range p.nodes {
+		if lastscore != largenum && f.score == largenum {
+			bld.WriteString("\n")
+		}
+		lastscore = f.score
 		target := filepath.Join(f.relative, f.name)
 		bld.WriteString(target)
 		bld.WriteString("\n")
 	}
 
 	var fh *os.File
-
 	_, err = os.Stat(linksfile)
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -154,6 +159,7 @@ func (p *Indexer) run(st *stats.FileStats, dir string, relative string) error {
 					name:     f.Name(),
 					sort:     fmt.Sprintf("%s%s%s", freqs, relative, strings.Repeat("z", pad-len(relative))),
 					relative: relative,
+					score:    frequency,
 				})
 			}
 		}
