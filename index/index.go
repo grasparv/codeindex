@@ -8,11 +8,16 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
+
+	"github.com/grasparv/codeindex/stats"
 )
 
 const pad = 256
 const columns = 233
 const spacing = 3
+const largenum = 999999999
+const recentuse = 72
 
 type Indexer struct {
 	Ending string
@@ -25,6 +30,7 @@ type node struct {
 	sort     string
 	relative string
 	new      string
+	score    int
 }
 
 type nodelist []node
@@ -44,7 +50,7 @@ func (n nodelist) Less(i, j int) bool {
 	return n[i].sort < n[j].sort
 }
 
-func (p *Indexer) Run(dir string, relative string) error {
+func (p *Indexer) Run(st *stats.FileStats, dir string) error {
 	dir, err := filepath.Abs(dir)
 	if err != nil {
 		return err
@@ -53,7 +59,7 @@ func (p *Indexer) Run(dir string, relative string) error {
 	linksfile := fmt.Sprintf("%s/.go.links", os.Getenv("HOME"))
 
 	p.nodes = make([]node, 0, 4096)
-	err = p.run(dir, relative)
+	err = p.run(st, dir, "")
 	if err != nil {
 		return err
 	}
@@ -64,18 +70,24 @@ func (p *Indexer) Run(dir string, relative string) error {
 		if len(f.name) > longest {
 			longest = len(f.name)
 		}
+
+		//fmt.Printf("node %+v\n", f)
 	}
 
 	bld := strings.Builder{}
+	lastscore := largenum
 
 	for _, f := range p.nodes {
+		if lastscore != largenum && f.score == largenum {
+			bld.WriteString("\n")
+		}
+		lastscore = f.score
 		target := filepath.Join(f.relative, f.name)
 		bld.WriteString(target)
 		bld.WriteString("\n")
 	}
 
 	var fh *os.File
-
 	_, err = os.Stat(linksfile)
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -111,7 +123,7 @@ func (p *Indexer) Run(dir string, relative string) error {
 	return nil
 }
 
-func (p *Indexer) run(dir string, relative string) error {
+func (p *Indexer) run(st *stats.FileStats, dir string, relative string) error {
 	finfo, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return err
@@ -119,7 +131,7 @@ func (p *Indexer) run(dir string, relative string) error {
 
 	for _, f := range finfo {
 		if f.IsDir() {
-			err := p.run(filepath.Join(dir, f.Name()), filepath.Join(relative, f.Name()))
+			err := p.run(st, filepath.Join(dir, f.Name()), filepath.Join(relative, f.Name()))
 			if err != nil {
 				return err
 			}
@@ -128,14 +140,37 @@ func (p *Indexer) run(dir string, relative string) error {
 	for _, f := range finfo {
 		if !f.IsDir() {
 			if strings.HasSuffix(f.Name(), p.Ending) {
+				fullname := filepath.Join(dir, f.Name())
+				frequency := 0
+				if v, ok := st.Entries[fullname]; ok {
+					frequency = largenum - v.Count
+					dur := time.Since(v.Date).Hours()
+					if dur < recentuse {
+						factor := (float64(recentuse) - dur) / 10 // e.g. 7.2 for most-recent hour
+						addition := v.Count * int(factor)         // e.g. + 7.2 * 145 = 1044
+						frequency = frequency - addition
+						//fmt.Printf("for %s, factor=%f, count=%d, addition=%d, frequency=%d\n", f.Name(), factor, v.Count, addition, frequency)
+					}
+				} else {
+					frequency = largenum
+				}
+				freqs := fmt.Sprintf("%010d", frequency)
 				p.nodes = append(p.nodes, node{
 					name:     f.Name(),
-					sort:     fmt.Sprintf("%s%s", relative, strings.Repeat("z", pad-len(relative))),
+					sort:     fmt.Sprintf("%s%s%s", freqs, relative, strings.Repeat("z", pad-len(relative))),
 					relative: relative,
+					score:    frequency,
 				})
 			}
 		}
 	}
 
 	return nil
+}
+
+func stringReverse(s string) (result string) {
+	for _, v := range s {
+		result = string(v) + result
+	}
+	return
 }
