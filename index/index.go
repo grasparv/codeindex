@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/grasparv/codeindex/stats"
 )
@@ -15,6 +17,8 @@ import (
 const pad = 256
 const columns = 233
 const spacing = 3
+const largenum = 999999999
+const recentuse = 72
 
 type Indexer struct {
 	Ending string
@@ -130,11 +134,14 @@ func (p *Indexer) run(st *stats.FileStats, dir string, relative string) error {
 	for _, f := range finfo {
 		if !f.IsDir() {
 			if strings.HasSuffix(f.Name(), p.Ending) {
-				const largenum = 999999999
 				fullname := filepath.Join(dir, f.Name())
 				frequency := 0
 				if v, ok := st.Entries[fullname]; ok {
-					frequency = largenum - v
+					frequency = largenum - v.Count
+					dur := int(math.Round(time.Since(v.Date).Hours()))
+					if dur < recentuse {
+						frequency = (frequency * (recentuse - dur)) / 10
+					}
 				} else {
 					frequency = largenum
 				}

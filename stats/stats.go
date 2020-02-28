@@ -7,10 +7,16 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 )
 
+type FileStat struct {
+	Count int       `json:"count"`
+	Date  time.Time `json:"timestamp"`
+}
+
 type FileStats struct {
-	Entries map[string]int `json:"entries"`
+	Entries map[string]FileStat `json:"entries"`
 }
 
 func getStatsFilename() string {
@@ -26,7 +32,7 @@ func Read() (*FileStats, error) {
 			return nil, err
 		}
 		st := &FileStats{
-			Entries: make(map[string]int),
+			Entries: make(map[string]FileStat),
 		}
 		return st, nil
 	}
@@ -49,7 +55,7 @@ func Read() (*FileStats, error) {
 	}
 
 	if st.Entries == nil {
-		st.Entries = make(map[string]int)
+		st.Entries = make(map[string]FileStat)
 	}
 
 	return &st, nil
@@ -95,10 +101,14 @@ func (st *FileStats) Update(filename string) error {
 		return errors.New("will not count directories")
 	}
 
-	if _, ok := st.Entries[absname]; ok {
-		st.Entries[absname]++
+	if v, ok := st.Entries[absname]; ok {
+		v.Count++
+		v.Date = time.Now()
 	} else {
-		st.Entries[absname] = 1
+		st.Entries[absname] = FileStat{
+			Count: 1,
+			Date:  time.Now(),
+		}
 	}
 
 	return nil
