@@ -11,16 +11,18 @@ import (
 	"time"
 )
 
-const oneweek = 120.0
-const pruneratio = 5
+const minexist = 10.0
+const pruneratio = 1.0
+const recentuse = 72
 
 type FileStat struct {
-	Count int       `json:"count"`
-	Date  time.Time `json:"timestamp"`
+	Shortname string    `json:"name"`
+	Count     int       `json:"count"`
+	Date      time.Time `json:"timestamp"`
 }
 
 type FileStats struct {
-	Entries map[string]FileStat `json:"entries"`
+	Entries map[string]*FileStat `json:"entries"`
 }
 
 func getStatsFilename() string {
@@ -36,7 +38,7 @@ func Read() (*FileStats, error) {
 			return nil, err
 		}
 		st := &FileStats{
-			Entries: make(map[string]FileStat),
+			Entries: make(map[string]*FileStat),
 		}
 		return st, nil
 	}
@@ -59,7 +61,7 @@ func Read() (*FileStats, error) {
 	}
 
 	if st.Entries == nil {
-		st.Entries = make(map[string]FileStat)
+		st.Entries = make(map[string]*FileStat)
 	}
 
 	return &st, nil
@@ -106,14 +108,16 @@ func (st *FileStats) Update(filename string) error {
 	}
 
 	if v, ok := st.Entries[absname]; ok {
-		st.Entries[absname] = FileStat{
-			Count: v.Count + 1,
-			Date:  time.Now(),
+		st.Entries[absname] = &FileStat{
+			Shortname: absname,
+			Count:     v.Count + 1,
+			Date:      time.Now(),
 		}
 	} else {
-		st.Entries[absname] = FileStat{
-			Count: 1,
-			Date:  time.Now(),
+		st.Entries[absname] = &FileStat{
+			Shortname: absname,
+			Count:     1,
+			Date:      time.Now(),
 		}
 	}
 
@@ -127,11 +131,37 @@ func (st *FileStats) Update(filename string) error {
 	return nil
 }
 
-func (fs FileStat) IsTooOld() bool {
-	age := time.Since(fs.Date)
-	if age.Hours() > oneweek && // last use older than one week
-		fs.Count/int(math.Round(age.Hours())) < pruneratio { // low count/age ratio
+func (e FileStat) ratio() float64 {
+	age := time.Since(e.Date)
+	hours := math.Round(age.Hours())
+	if hours == 0 {
+		return 4.0
+	}
+	return float64(e.Count) / hours
+}
+
+func (e FileStat) IsTooOld() bool {
+	age := time.Since(e.Date)
+	hours := math.Round(age.Hours())
+	if hours > minexist && e.ratio() < pruneratio {
 		return true
 	}
 	return false
+}
+
+func (e FileStat) GetScore() int {
+	frequency := e.Count
+	dur := time.Since(e.Date).Hours()
+	if dur < recentuse {
+		factor := (float64(recentuse) - dur) / 10 // e.g. 7.2 for most-recent hour
+		addition := e.Count * int(factor)         // e.g. + 7.2 * 145 = 1044
+		frequency = frequency + addition
+		//fmt.Printf("for %s, factor=%f, count=%d, addition=%d, frequency=%d\n", f.Name(), factor, v.Count, addition, frequency)
+	}
+	return frequency
+}
+
+func (e FileStat) Description() string {
+	dur := time.Since(e.Date).Hours()
+	return fmt.Sprintf("%5dx %4.1fh %5.1fx/h %5dpts %s\n", e.Count, dur, e.ratio(), e.GetScore(), e.Shortname)
 }

@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/grasparv/codeindex/stats"
 )
@@ -17,7 +16,6 @@ const pad = 256
 const columns = 233
 const spacing = 3
 const largenum = 999999999
-const recentuse = 72
 
 type Indexer struct {
 	Ending string
@@ -56,8 +54,6 @@ func (p *Indexer) Run(st *stats.FileStats, dir string) error {
 		return err
 	}
 
-	linksfile := fmt.Sprintf("%s/.go.links", os.Getenv("HOME"))
-
 	p.nodes = make([]node, 0, 4096)
 	err = p.run(st, dir, "")
 	if err != nil {
@@ -87,6 +83,7 @@ func (p *Indexer) Run(st *stats.FileStats, dir string) error {
 		bld.WriteString("\n")
 	}
 
+	linksfile := fmt.Sprintf("%s/.go.links", os.Getenv("HOME"))
 	var fh *os.File
 	_, err = os.Stat(linksfile)
 	if err != nil {
@@ -143,14 +140,7 @@ func (p *Indexer) run(st *stats.FileStats, dir string, relative string) error {
 				fullname := filepath.Join(dir, f.Name())
 				frequency := 0
 				if v, ok := st.Entries[fullname]; ok {
-					frequency = largenum - v.Count
-					dur := time.Since(v.Date).Hours()
-					if dur < recentuse {
-						factor := (float64(recentuse) - dur) / 10 // e.g. 7.2 for most-recent hour
-						addition := v.Count * int(factor)         // e.g. + 7.2 * 145 = 1044
-						frequency = frequency - addition
-						//fmt.Printf("for %s, factor=%f, count=%d, addition=%d, frequency=%d\n", f.Name(), factor, v.Count, addition, frequency)
-					}
+					frequency = largenum - v.GetScore()
 				} else {
 					frequency = largenum
 				}

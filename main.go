@@ -6,35 +6,44 @@ import (
 
 	"github.com/grasparv/codeindex/index"
 	"github.com/grasparv/codeindex/stats"
+	"github.com/grasparv/codeindex/status"
 )
 
 func main() {
 	var ending string
 	flag.StringVar(&ending, "s", ".go", "extension to index")
 	flag.Parse()
-	dirs := flag.Args()
-	if len(dirs) != 2 {
+	args := flag.Args()
+	if len(args) < 1 || len(args) > 2 {
 		fmt.Printf("invalid usage\n")
 		return
 	}
 
-	switch dirs[0] {
+	switch args[0] {
 	case "index":
+		if len(args) != 2 {
+			fmt.Printf("invalid usage\n")
+			return
+		}
 		indexer := &codeindex.Indexer{
 			Ending: ending,
 		}
 		stats, err := stats.Read()
 		if err == nil {
-			err = indexer.Run(stats, dirs[1])
+			err = indexer.Run(stats, args[1])
 		}
 		if err != nil {
 			fmt.Printf("error %s\n", err.Error())
 			return
 		}
 	case "use":
+		if len(args) != 2 {
+			fmt.Printf("invalid usage\n")
+			return
+		}
 		stats, err := stats.Read()
 		if err == nil {
-			err = stats.Update(dirs[1])
+			err = stats.Update(args[1])
 		}
 		if err == nil {
 			err = stats.Write()
@@ -43,6 +52,17 @@ func main() {
 			fmt.Printf("error %s\n", err.Error())
 			return
 		}
+	case "status":
+		var out string
+		stats, err := stats.Read()
+		if err == nil {
+			out, err = status.Status(stats)
+		}
+		if err != nil {
+			fmt.Printf("error %s\n", err.Error())
+			return
+		}
+		fmt.Print(out)
 	default:
 		fmt.Printf("unknown command\n")
 	}
