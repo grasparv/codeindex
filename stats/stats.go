@@ -119,12 +119,19 @@ func (st *FileStats) Update(filename string) error {
 
 	// auto-prune old or rarely-used files
 	for k, v := range st.Entries {
-		age := time.Since(v.Date)
-		if age.Hours() > oneweek && // last use older than one week
-			v.Count/int(math.Round(age.Hours())) < pruneratio { // low count/age ratio
+		if v.IsTooOld() {
 			delete(st.Entries, k)
 		}
 	}
 
 	return nil
+}
+
+func (fs FileStat) IsTooOld() bool {
+	age := time.Since(fs.Date)
+	if age.Hours() > oneweek && // last use older than one week
+		fs.Count/int(math.Round(age.Hours())) < pruneratio { // low count/age ratio
+		return true
+	}
+	return false
 }
