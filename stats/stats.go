@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const minexist = 1.0
+const minexist = 0.5
 const pruneratio = 1.0
 const recentuse = 72
 
