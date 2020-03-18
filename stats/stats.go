@@ -19,6 +19,7 @@ type FileStat struct {
 	Shortname string    `json:"name"`
 	Count     int       `json:"count"`
 	Date      time.Time `json:"timestamp"`
+	Hidden    bool      `json:"hidden"`
 }
 
 type FileStats struct {
@@ -112,19 +113,25 @@ func (st *FileStats) Update(filename string) error {
 			Shortname: absname,
 			Count:     v.Count + 1,
 			Date:      time.Now(),
+			Hidden:    false,
 		}
 	} else {
 		st.Entries[absname] = &FileStat{
 			Shortname: absname,
 			Count:     1,
 			Date:      time.Now(),
+			Hidden:    false,
 		}
 	}
 
 	// auto-prune old or rarely-used files
 	for k, v := range st.Entries {
-		if v.IsTooOld() || !exists(k) {
+		if v.IsTooOld() {
 			delete(st.Entries, k)
+		}
+
+		if !exists(k) {
+			st.Entries[k].Hidden = true
 		}
 	}
 
