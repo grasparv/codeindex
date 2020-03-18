@@ -123,12 +123,20 @@ func (st *FileStats) Update(filename string) error {
 
 	// auto-prune old or rarely-used files
 	for k, v := range st.Entries {
-		if v.IsTooOld() {
+		if v.IsTooOld() || !exists(k) {
 			delete(st.Entries, k)
 		}
 	}
 
 	return nil
+}
+
+func exists(path string) bool {
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
 
 func (e FileStat) ratio() float64 {
