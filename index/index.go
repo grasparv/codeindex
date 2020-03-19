@@ -74,7 +74,6 @@ func (p *Indexer) Run(st *stats.FileStats, dir string) error {
 	lastscore := largenum
 
 	for _, f := range p.nodes {
-
 		if lastscore != largenum && f.score == largenum {
 			bld.WriteString("\n")
 		}
