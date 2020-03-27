@@ -11,8 +11,8 @@ import (
 	"time"
 )
 
-const minexist = 0.5
-const pruneratio = 1.0
+const minexist = 1.0
+const pruneratio = 0.3
 const recentuse = 72
 
 type FileStat struct {
