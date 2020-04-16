@@ -12,7 +12,7 @@ import (
 )
 
 const minexist = 1.0
-const pruneratio = 0.3
+const pruneratio = 0.1
 const recentuse = 72
 
 type FileStat struct {
