@@ -49,7 +49,6 @@ func main() {
 			err = stats.Write()
 		}
 		if err != nil {
-			fmt.Printf("error %s\n", err.Error())
 			return
 		}
 	case "status":
