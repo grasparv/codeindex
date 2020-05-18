@@ -158,15 +158,16 @@ func (e FileStat) IsTooOld() bool {
 }
 
 func (e FileStat) GetScore() int {
-	frequency := e.Count
-	dur := time.Since(e.Date).Hours()
-	if dur < recentuse {
-		factor := (float64(recentuse) - dur) / 10 // e.g. 7.2 for most-recent hour
-		addition := e.Count * int(factor)         // e.g. + 7.2 * 145 = 1044
-		frequency = frequency + addition
-		//fmt.Printf("for %s, factor=%f, count=%d, addition=%d, frequency=%d\n", f.Name(), factor, v.Count, addition, frequency)
-	}
-	return frequency
+	//frequency := e.Count
+	//dur := time.Since(e.Date).Hours()
+	//if dur < recentuse {
+	//	factor := (float64(recentuse) - dur) // e.g. 7.2 for most-recent hour
+	//	addition := e.Count * int(factor)    // e.g. + 7.2 * 145 = 1044
+	//	frequency = frequency + addition
+	//	fmt.Printf("for %s, factor=%f, count=%d, addition=%d, frequency=%d\n", f.Name(), factor, v.Count, addition, frequency)
+	//}
+	//return frequency
+	return e.Count
 }
 
 func (e FileStat) Description() string {
