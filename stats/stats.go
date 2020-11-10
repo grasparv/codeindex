@@ -13,7 +13,7 @@ import (
 
 const minexist = 1.0
 const pruneratio = 0.1
-const recentuse = 72
+const recentuse = 48
 
 type FileStat struct {
 	Shortname string    `json:"name"`
@@ -167,7 +167,10 @@ func (e FileStat) GetScore() int {
 	//	fmt.Printf("for %s, factor=%f, count=%d, addition=%d, frequency=%d\n", f.Name(), factor, v.Count, addition, frequency)
 	//}
 	//return frequency
-	return e.Count
+	if e.Count > 5 && time.Since(e.Date).Hours() < recentuse {
+		return int(time.Since(e.Date) / time.Minute)
+	}
+	return -1
 }
 
 func (e FileStat) Description() string {

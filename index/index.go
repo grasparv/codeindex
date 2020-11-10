@@ -138,18 +138,19 @@ func (p *Indexer) run(st *stats.FileStats, dir string, relative string) error {
 		if !f.IsDir() {
 			if strings.HasSuffix(f.Name(), p.Ending) {
 				fullname := filepath.Join(dir, f.Name())
-				frequency := 0
+				score := 0
 				if v, ok := st.Entries[fullname]; ok {
-					frequency = largenum - v.GetScore()
-				} else {
-					frequency = largenum
+					score = largenum - v.GetScore()
 				}
-				freqs := fmt.Sprintf("%010d", frequency)
+				if score <= 0 {
+					score = largenum
+				}
+				freqs := fmt.Sprintf("%010d", score)
 				p.nodes = append(p.nodes, node{
 					name:     f.Name(),
 					sort:     fmt.Sprintf("%s%s%s", freqs, relative, strings.Repeat("z", pad-len(relative))),
 					relative: relative,
-					score:    frequency,
+					score:    score,
 				})
 			}
 		}
